@@ -1,0 +1,323 @@
+
+Problem Statement 4 — Field Workforce Attendance & Productivity SaaS (Hardware-Free)
+
+
+Title:
+
+
+Build a Complete Field-Team Attendance, Task & Productivity SaaS Using Only Mobile Phones (No Hardware).
+
+
+⸻
+
+
+Context & Real Problem
+
+
+Indian businesses with field teams (sales reps, service engineers, delivery boys, surveyors, support staff) struggle with:
+
+        •        Fake attendance
+
+        •        Incorrect visit logs
+
+        •        No proof of work
+
+        •        Zero visibility on field activity
+
+        •        Delayed reports
+
+        •        Manual tracking via WhatsApp
+
+
+Most small-to-mid companies cannot afford biometrics, RFID, GPS trackers, or enterprise field apps.
+
+
+They need a lightweight, mobile-first SaaS platform that runs only on mobile phone GPS, and gives business owners clear visibility of:
+
+        •        Attendance
+
+        •        Daily tasks
+
+        •        Visits
+
+        •        Work completion
+
+        •        Proof (location, time, notes, photos)
+
+        •        Productivity
+
+
+No hardware. No devices. No RFID. No biometric.
+
+
+Just smart use of phone sensors + simple web admin panel.
+
+
+⸻
+
+
+Your Challenge
+
+
+Build a Hardware-Free Field Workforce SaaS consisting of:
+
+
+⸻
+
+
+1. Admin Web Dashboard (SaaS Control Panel)
+
+
+Admins should be able to:
+
+
+Employee & Team Management
+
+        •        Create departments, teams, roles
+
+        •        Add employees (name, phone, role)
+
+        •        Assign supervisors
+
+
+Attendance & Workday
+
+        •        View daily attendance summary
+
+        •        Late/early/out-of-area alerts
+
+        •        Attendance approval list
+
+
+Task & Visit Management
+
+        •        Create daily tasks
+
+        •        Assign visits to employees
+
+        •        View real-time work progress
+
+        •        Approve/Reject completed tasks
+
+
+Location Visibility
+
+        •        Live employee locations (updated via phone GPS)
+
+        •        Visit geo-verification
+
+        •        Distance travelled summary
+
+
+Timesheet & Reports
+
+        •        Daily report
+
+        •        Productivity report (tasks done vs tasks assigned)
+
+        •        Attendance sheet export
+
+        •        Visit summary + proofs
+
+        •        Generate monthly attendance PDF
+
+
+⸻
+
+ 2. Employee Mobile App / PWA
+
+
+A simple mobile app for field workers that allows:
+
+
+Attendance
+
+        •        Login via OTP
+
+        •        Mark attendance using GPS
+
+        •        Mark break-in / break-out
+
+        •        Complete day-end punch-out
+
+
+Work Execution
+
+        •        View today’s tasks/visits
+
+        •        Navigate to client location
+
+        •        Mark visit completion
+
+        •        Upload work proof:
+
+        •        Notes
+
+        •        Photo
+
+        •        Geolocation
+
+
+Location Streaming
+
+        •        Background GPS pings every 3–5 minutes (battery friendly)
+
+        •        Offline data caching for low network areas
+
+        •        Auto sync when network returns
+
+
+⸻
+
+
+3. Supervisor Dashboard (Optional but Valuable)
+
+
+Supervisors can:
+
+        •        Monitor their team only
+
+        •        Approve/reject attendance
+
+        •        Approve/reject completed visits
+
+        •        Track team productivity
+
+        •        Reassign tasks
+
+
+⸻
+
+
+Core Problems You MUST Solve
+
+
+Your SaaS should address at least five of these:
+
+        •        Hardware-free attendance
+
+        •        Live visibility using phone GPS
+
+        •        Route-less visit verification
+
+        •        Fake-location prevention
+
+        •        Offline mode for low network
+
+        •        Battery-friendly GPS logic
+
+        •        Simple timesheet automation
+
+        •        Exportable attendance logs
+
+        •        Task → execution → proof flow
+
+        •        Multi-role user system (Admin / Supervisor / Staff)
+
+
+⸻
+
+
+Constraints
+
+        •        No hardware
+
+        •        No RFID
+
+        •        No biometrics
+
+        •        No GPS trackers
+
+        •        No paid maps (use free tiers)
+
+        •        System must work on low-end Android phones
+
+        •        Buildable within hackathon time
+
+        •        Only phone GPS + web dashboard
+
+
+⸻
+
+
+
+Expected Deliverables (Minimum MVP)
+
+
+1. Admin Web App
+
+        •        Add employee → assign task
+
+        •        Real-time employee list with location
+
+        •        Attendance sheet
+
+        •        View completed tasks + proofs
+
+        •        Export attendance or tasks to PDF
+
+
+2. Employee Mobile App / PWA
+
+        •        Punch-in / Punch-out
+
+        •        Phone GPS update
+
+        •        Today’s tasks
+
+        •        Visit completion with note or image
+
+        •        Offline storage + sync later
+
+
+3. Proof/Report Generator
+
+
+Generate a PDF containing:
+
+        •        Attendance timeline
+
+        •        Visits completed
+
+        •        Proof notes/photos
+
+        •        Geo-verification markers
+
+        •        Daily summary
+
+
+⸻
+
+
+Judging Criteria
+
+
+Working Prototype (40%)
+
+
+Attendance → task → proof → report should flow end-to-end.
+
+
+UI/UX Simplicity (20%)
+
+
+Easy for staff with low digital literacy.
+
+
+Tech Approach (15%)
+
+
+GPS sampling, offline sync, clean architecture.
+
+
+Innovation (15%)
+
+
+Smart solutions like geofence-free verification, low battery GPS, etc.
+
+
+Business/SaaS Potential (10%)
+
+
+Subscription-ready revenue model.
+
