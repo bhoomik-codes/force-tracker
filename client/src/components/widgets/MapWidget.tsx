@@ -1,4 +1,5 @@
-import { EMPLOYEES } from "@/lib/mockData";
+import { useQuery } from "@tanstack/react-query";
+import type { Employee } from "@shared/schema";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 export function MapWidget({ className }: { className?: string }) {
+  const { data: employees = [] } = useQuery<Employee[]>({ queryKey: ["/api/employees"] });
   // Center of Delhi for default view
   const center: [number, number] = [28.6139, 77.2090];
 
@@ -34,17 +36,17 @@ export function MapWidget({ className }: { className?: string }) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          {EMPLOYEES.map((emp) => {
-             // Mock locations around Delhi
-             const lat = 28.6139 + (Math.random() * 0.1 - 0.05);
-             const lng = 77.2090 + (Math.random() * 0.1 - 0.05);
+          {employees.map((emp) => {
+             // Mock locations around Delhi if no coordinates provided
+             const lat = emp.latitude ? parseFloat(emp.latitude) : 28.6139 + (Math.random() * 0.1 - 0.05);
+             const lng = emp.longitude ? parseFloat(emp.longitude) : 77.2090 + (Math.random() * 0.1 - 0.05);
 
              return (
               <Marker key={emp.id} position={[lat, lng]}>
                 <Popup>
                   <div className="text-xs">
                     <p className="font-bold">{emp.name}</p>
-                    <p>{emp.role}</p>
+                    <p>{emp.position}</p>
                     <p className="text-[10px] text-muted-foreground">{emp.status}</p>
                   </div>
                 </Popup>

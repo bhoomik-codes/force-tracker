@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { ADMIN_NAV_ITEMS } from "@/lib/mockData";
+import { ADMIN_NAV_ITEMS } from "./NavItems";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import { LogOut, Bell } from "lucide-react";
@@ -19,10 +19,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {ADMIN_NAV_ITEMS.map((item) => {
-            const isActive = location === item.path;
+            const isActive = location === item.href;
             const Icon = item.icon;
             return (
-              <Link key={item.path} href={item.path}>
+              <Link key={item.label} href={item.href}>
                 <div className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md transition-all cursor-pointer font-medium text-sm group",
                   isActive 
@@ -52,7 +52,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         {/* Header */}
         <header className="h-16 border-b bg-card px-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
           <h1 className="font-heading text-xl font-medium text-primary uppercase tracking-wide">
-            {ADMIN_NAV_ITEMS.find(i => i.path === location)?.label || "Dashboard"}
+            {ADMIN_NAV_ITEMS.find(i => i.href === location)?.label || "Dashboard"}
           </h1>
           
           <div className="flex items-center gap-4">

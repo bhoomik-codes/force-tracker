@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { EMPLOYEES } from "@/lib/mockData";
+import { useQuery } from "@tanstack/react-query";
+import type { Employee } from "@shared/schema";
 import { MapPin, Navigation, User, Battery, Signal, Clock } from "lucide-react";
 
 // Fix Leaflet marker icon issue
@@ -43,18 +44,25 @@ export default function LiveMap() {
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [mapCenter, setMapCenter] = useState<[number, number]>([28.6139, 77.2090]); // Default Delhi
   
-  // Transform mock data to include coordinates
-  const agentsWithLocation = EMPLOYEES.map(emp => {
+  const { data: employees = [] } = useQuery<Employee[]>({ queryKey: ["/api/employees"] });
+
+  // Transform data to include coordinates
+  const agentsWithLocation = employees.map(emp => {
     let coords = LOCATIONS.delhi; // Default
-    if (emp.location.includes("Noida")) coords = LOCATIONS.noida;
-    if (emp.location.includes("Bangalore")) coords = LOCATIONS.bangalore;
-    if (emp.location.includes("Mumbai")) coords = LOCATIONS.mumbai;
+    if ((emp.location || "").includes("Noida")) coords = LOCATIONS.noida;
+    if ((emp.location || "").includes("Bangalore")) coords = LOCATIONS.bangalore;
+    // Use DB coordinates if available, otherwise mock around a city
+    if (emp.latitude && emp.longitude) {
+      coords = [parseFloat(emp.latitude), parseFloat(emp.longitude)];
+    }
     
     // Add some random jitter to simulate movement
     return {
       ...emp,
       lat: coords[0] + (Math.random() * 0.01 - 0.005),
       lng: coords[1] + (Math.random() * 0.01 - 0.005),
+      battery: 100, // mock battery
+      lastPing: "Just now" // mock ping
     };
   });
 
@@ -83,7 +91,7 @@ export default function LiveMap() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Agents</SelectItem>
-                {EMPLOYEES.map(emp => (
+                {employees.map(emp => (
                   <SelectItem key={emp.id} value={emp.id.toString()}>{emp.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -117,16 +125,16 @@ export default function LiveMap() {
                         </div>
                         <div>
                           <p className="font-medium text-sm">{agent.name}</p>
-                          <p className="text-xs text-muted-foreground">{agent.role}</p>
+                          <p className="text-xs text-muted-foreground">{agent.position}</p>
                         </div>
                       </div>
-                      <Badge variant={agent.status === "Active" || agent.status === "On Duty" ? "default" : "secondary"} className="text-[10px]">
+                      <Badge variant={agent.status === "active" || agent.status === "Active" || agent.status === "On Duty" ? "default" : "secondary"} className="text-[10px]">
                         {agent.status}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mt-3">
                       <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> {agent.location.split(',')[0]}
+                        <MapPin className="h-3 w-3" /> {(agent.location || "").split(',')[0]}
                       </div>
                       <div className="flex items-center gap-1">
                         <Battery className="h-3 w-3" /> {agent.battery}%
@@ -172,7 +180,7 @@ export default function LiveMap() {
                              </div>
                              <div>
                                <h3 className="font-bold text-sm">{agent.name}</h3>
-                               <p className="text-xs text-muted-foreground">{agent.role}</p>
+                               <p className="text-xs text-muted-foreground">{agent.position}</p>
                              </div>
                           </div>
                           <div className="space-y-1 text-xs border-t pt-2">

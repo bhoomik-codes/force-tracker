@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { MOBILE_NAV_ITEMS } from "@/lib/mockData";
+import { MOBILE_NAV_ITEMS } from "./NavItems";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import { Bell } from "lucide-react";
@@ -26,10 +26,10 @@ export function MobileLayout({ children }: { children: React.ReactNode }) {
       {/* Bottom Nav */}
       <nav className="h-16 bg-card border-t border-border fixed bottom-0 w-full max-w-md flex items-center justify-around z-30 pb-safe">
         {MOBILE_NAV_ITEMS.map((item) => {
-          const isActive = location === item.path;
+          const isActive = location === item.href;
           const Icon = item.icon;
           return (
-            <Link key={item.path} href={item.path}>
+            <Link key={item.label} href={item.href}>
               <div className={cn(
                 "flex flex-col items-center justify-center w-16 h-full gap-1 transition-all cursor-pointer active:scale-95",
                 isActive ? "text-primary" : "text-muted-foreground"

@@ -1,5 +1,6 @@
 import { MobileLayout } from "@/components/layout/MobileLayout";
-import { TASKS } from "@/lib/mockData";
+import { useQuery } from "@tanstack/react-query";
+import type { Task } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock, ChevronRight, Filter, Navigation } from "lucide-react";
@@ -7,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { Link } from "wouter";
 
 export default function MobileTasks() {
+  const { data: tasks = [] } = useQuery<Task[]>({ queryKey: ["/api/tasks"] });
+
   return (
     <MobileLayout>
       <div className="px-6 py-6 space-y-6">
@@ -18,7 +21,7 @@ export default function MobileTasks() {
         </div>
 
         <div className="space-y-4">
-          {TASKS.map((task) => (
+          {tasks.map((task) => (
             <Card key={task.id} className={cn(
               "border-0 shadow-sm ring-1 ring-border overflow-hidden transition-all active:scale-[0.98]",
               task.status === "Completed" ? "opacity-70 grayscale" : "bg-white"

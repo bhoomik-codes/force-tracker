@@ -6,7 +6,7 @@ Force Tracker is a field employee management and tracking prototype. **Currently
 
 Here is the actual working status of the main features:
 
-*   **Time & Attendance (Timesheets):** 
+*   **Time & Attendance (Timesheets):**             
     *   *Status:* **Mocked**
     *   *Details:* The UI displays timesheet records, but the data is completely hardcoded on the frontend. Features like exporting to PDF/Excel are UI-only buttons and not yet implemented.
 *   **Site Visits Management:** 

@@ -163,7 +163,7 @@ export default function Landing() {
               {link.label}
             </a>
           ))}
-          <Link href="/login">
+          <Link href="/register">
             <Button size="sm" className="font-bold">Get Started</Button>
           </Link>
         </nav>
@@ -186,7 +186,7 @@ export default function Landing() {
                   {link.label}
                 </a>
               ))}
-              <Link href="/login">
+              <Link href="/register">
                 <Button className="w-full font-bold">Get Started</Button>
               </Link>
             </div>
@@ -303,7 +303,7 @@ export default function Landing() {
              <p className="opacity-90 max-w-xl mx-auto">
                Join thousands of businesses saving time and increasing productivity with our simple, mobile-first solution.
              </p>
-             <Link href="/login">
+             <Link href="/register">
                <Button size="lg" variant="secondary" className="font-bold">
                  Start Free Trial
                </Button>
@@ -385,7 +385,7 @@ export default function Landing() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Link href="/login" className="w-full">
+                  <Link href="/register" className="w-full">
                     <Button className="w-full font-bold" variant={plan.popular ? "default" : "outline"}>
                       {plan.cta}
                     </Button>
