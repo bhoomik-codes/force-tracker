@@ -10,6 +10,7 @@ import L from "leaflet";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee } from "@shared/schema";
 import { MapPin, Navigation, User, Battery, Signal, Clock } from "lucide-react";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 // Fix Leaflet marker icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -43,26 +44,49 @@ function MapController({ center }: { center: [number, number] }) {
 export default function LiveMap() {
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
   const [mapCenter, setMapCenter] = useState<[number, number]>([28.6139, 77.2090]); // Default Delhi
+  const [liveLocations, setLiveLocations] = useState<Record<string, {lat: number, lng: number}>>({});
   
+  const { lastMessage } = useWebSocket();
   const { data: employees = [] } = useQuery<Employee[]>({ queryKey: ["/api/employees"] });
+
+  useEffect(() => {
+    if (lastMessage?.type === 'LOCATION_UPDATE') {
+      const { employeeId, latitude, longitude } = lastMessage.payload;
+      setLiveLocations(prev => ({
+        ...prev,
+        [employeeId]: { lat: latitude, lng: longitude }
+      }));
+    }
+  }, [lastMessage]);
 
   // Transform data to include coordinates
   const agentsWithLocation = employees.map(emp => {
-    let coords = LOCATIONS.delhi; // Default
+    // 1. Check for live WebSocket updates
+    if (liveLocations[emp.id]) {
+      return {
+        ...emp,
+        lat: liveLocations[emp.id].lat,
+        lng: liveLocations[emp.id].lng,
+        battery: 100,
+        lastPing: "Live"
+      };
+    }
+
+    // 2. Fallback to Database coordinates
+    let coords = LOCATIONS.delhi; // Default fallback
     if ((emp.location || "").includes("Noida")) coords = LOCATIONS.noida;
     if ((emp.location || "").includes("Bangalore")) coords = LOCATIONS.bangalore;
-    // Use DB coordinates if available, otherwise mock around a city
+    
     if (emp.latitude && emp.longitude) {
       coords = [parseFloat(emp.latitude), parseFloat(emp.longitude)];
     }
     
-    // Add some random jitter to simulate movement
     return {
       ...emp,
-      lat: coords[0] + (Math.random() * 0.01 - 0.005),
-      lng: coords[1] + (Math.random() * 0.01 - 0.005),
+      lat: coords[0],
+      lng: coords[1],
       battery: 100, // mock battery
-      lastPing: "Just now" // mock ping
+      lastPing: emp.updatedAt ? new Date(emp.updatedAt).toLocaleTimeString() : "Unknown" 
     };
   });
 

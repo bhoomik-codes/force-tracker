@@ -4,9 +4,37 @@ import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useEffect } from "react";
 
 export function MobileLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const { sendLocation, isConnected } = useWebSocket();
+
+  useEffect(() => {
+    // Only track location for logged in employees and when WS is connected
+    if (user?.role !== "employee" || !isConnected) return;
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        sendLocation(user.id, position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        console.warn("Error tracking location:", error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000, // 10 seconds
+        timeout: 5000,
+      }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [user, isConnected]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto border-x border-border shadow-2xl relative overflow-hidden">

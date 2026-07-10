@@ -3,6 +3,7 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { setupWebSocket } from "./websocket";
 
 const app = express();
 const httpServer = createServer(app);
@@ -77,6 +78,9 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
+  
+  // Attach WebSocket server
+  setupWebSocket(httpServer);
 
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
