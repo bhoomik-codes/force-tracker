@@ -32,6 +32,7 @@ export interface IStorage {
   // TimeSheet methods
   createTimeSheet(timesheet: InsertTimeSheet): Promise<TimeSheet>;
   getTimeSheetsByUserId(userId: string): Promise<TimeSheet[]>;
+  getTimesheetsByAdmin(adminId: string): Promise<TimeSheet[]>;
   getTimeSheet(id: string): Promise<TimeSheet | undefined>;
   updateTimeSheet(id: string, timesheet: Partial<TimeSheet>): Promise<TimeSheet | undefined>;
   getOpenTimeSheet(userId: string): Promise<TimeSheet | undefined>;
@@ -139,6 +140,18 @@ export class DatabaseStorage implements IStorage {
 
   async getTimeSheetsByUserId(userId: string): Promise<TimeSheet[]> {
     return db.select().from(timesheets).where(eq(timesheets.userId, userId)).orderBy(desc(timesheets.date));
+  }
+
+  async getTimesheetsByAdmin(adminId: string): Promise<TimeSheet[]> {
+    const adminEmployees = await db.select().from(employees).where(eq(employees.adminId, adminId));
+    const employeeUserIds = adminEmployees.map(e => e.userId).filter(Boolean) as string[];
+    
+    if (employeeUserIds.length === 0) return [];
+    
+    const { inArray } = await import("drizzle-orm");
+    return db.select().from(timesheets)
+      .where(inArray(timesheets.userId, employeeUserIds))
+      .orderBy(desc(timesheets.date));
   }
 
   async getTimeSheet(id: string): Promise<TimeSheet | undefined> {

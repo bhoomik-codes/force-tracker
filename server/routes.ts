@@ -299,7 +299,20 @@ export async function registerRoutes(
     }
   });
 
-  // ─── TimeSheet Routes ──────────────────────────────────────────────────────
+  // ─── TimeSheet Routes ───────────────────────────────────────────────────────
+  app.get("/api/timesheets", async (req, res) => {
+    try {
+      const adminId = (req.session as any)?.userId;
+      const userRole = (req.session as any)?.userRole;
+      if (!adminId || userRole !== "admin") return res.status(401).json({ error: "Unauthorized" });
+
+      const timesheets = await storage.getTimesheetsByAdmin(adminId);
+      res.json(timesheets);
+    } catch (error: any) {
+      handleError(res, error);
+    }
+  });
+
   app.post("/api/timesheets/punch-in", async (req, res) => {
     try {
       const { userId } = req.body;

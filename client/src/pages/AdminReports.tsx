@@ -22,6 +22,10 @@ import {
 } from "recharts";
 import { Download, Printer, Filter, Calendar as CalendarIcon, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import type { TimeSheet, Employee } from "@shared/schema";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Mock Data
 const ATTENDANCE_DATA = [
@@ -54,16 +58,92 @@ export default function AdminReports() {
   const [reportType, setReportType] = useState("attendance");
   const [isExporting, setIsExporting] = useState(false);
 
+  const { data: timesheets = [] } = useQuery<TimeSheet[]>({ queryKey: ["/api/timesheets"] });
+  const { data: employees = [] } = useQuery<Employee[]>({ queryKey: ["/api/employees"] });
+
+  const getExportData = () => {
+    return timesheets.map(ts => {
+      const emp = employees.find(e => e.userId === ts.userId);
+      
+      let workHours = 0;
+      if (ts.checkInTime && ts.checkOutTime) {
+        const diffMs = new Date(ts.checkOutTime).getTime() - new Date(ts.checkInTime).getTime();
+        workHours = Math.round(diffMs / (1000 * 60 * 60) * 10) / 10;
+      }
+      
+      return {
+        Employee: emp?.name || 'Unknown',
+        Date: new Date(ts.date).toLocaleDateString(),
+        CheckIn: ts.checkInTime ? new Date(ts.checkInTime).toLocaleTimeString() : 'N/A',
+        CheckOut: ts.checkOutTime ? new Date(ts.checkOutTime).toLocaleTimeString() : 'N/A',
+        WorkHours: workHours || '-',
+        Status: ts.status || 'Unknown'
+      };
+    });
+  };
+
+  const generateCSV = () => {
+    const data = getExportData();
+    if (data.length === 0) return toast({ title: "No data", description: "No timesheets to export" });
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(","),
+      ...data.map(row => headers.map(header => `"${(row as any)[header]}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `timesheets_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const generatePDF = () => {
+    const data = getExportData();
+    if (data.length === 0) return toast({ title: "No data", description: "No timesheets to export" });
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Timesheet Report", 14, 22);
+    doc.setFontSize(11);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+
+    const headers = Object.keys(data[0]);
+    const tableData = data.map(row => headers.map(header => (row as any)[header]));
+
+    autoTable(doc, {
+      startY: 36,
+      head: [headers],
+      body: tableData,
+    });
+
+    doc.save(`timesheets_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   const handleExport = (format: string) => {
     setIsExporting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsExporting(false);
+    
+    try {
+      if (format === 'csv') generateCSV();
+      if (format === 'pdf') generatePDF();
+      
       toast({
         title: "Report Generated",
-        description: `Successfully downloaded ${reportType}_report.${format}`,
+        description: `Successfully downloaded timesheet report in ${format.toUpperCase()} format.`,
       });
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "An error occurred while generating the report.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
