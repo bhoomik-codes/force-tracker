@@ -12,6 +12,7 @@ import AdminLiveMap from "@/pages/AdminLiveMap";
 import AdminTasks from "@/pages/AdminTasks";
 import AdminReports from "@/pages/AdminReports";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminVisits from "@/pages/AdminVisits";
 import MobileHome from "@/pages/MobileHome";
 import MobileTasks from "@/pages/MobileTasks";
 import MobileVisit from "@/pages/MobileVisit";
@@ -65,6 +66,7 @@ function Router() {
       <Route path="/admin/employees" component={() => <ProtectedRoute component={AdminEmployees} allowedRole="admin" />} />
       <Route path="/admin/map" component={() => <ProtectedRoute component={AdminLiveMap} allowedRole="admin" />} />
       <Route path="/admin/tasks" component={() => <ProtectedRoute component={AdminTasks} allowedRole="admin" />} />
+      <Route path="/admin/visits" component={() => <ProtectedRoute component={AdminVisits} allowedRole="admin" />} />
       <Route path="/admin/reports" component={() => <ProtectedRoute component={AdminReports} allowedRole="admin" />} />
       <Route path="/admin/settings" component={() => <ProtectedRoute component={AdminSettings} allowedRole="admin" />} />
       

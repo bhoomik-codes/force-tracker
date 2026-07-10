@@ -25,6 +25,7 @@ export interface IStorage {
   // Visit methods
   createVisit(visit: InsertVisit): Promise<Visit>;
   getVisitsByUserId(userId: string): Promise<Visit[]>;
+  getVisitsByAdmin(adminId: string): Promise<Visit[]>;
   getVisit(id: string): Promise<Visit | undefined>;
   updateVisit(id: string, visit: Partial<Visit>): Promise<Visit | undefined>;
 
@@ -106,6 +107,18 @@ export class DatabaseStorage implements IStorage {
 
   async getVisitsByUserId(userId: string): Promise<Visit[]> {
     return db.select().from(visits).where(eq(visits.userId, userId)).orderBy(desc(visits.visitDate));
+  }
+
+  async getVisitsByAdmin(adminId: string): Promise<Visit[]> {
+    const adminEmployees = await db.select().from(employees).where(eq(employees.adminId, adminId));
+    const employeeUserIds = adminEmployees.map(e => e.userId).filter(Boolean) as string[];
+    
+    if (employeeUserIds.length === 0) return [];
+    
+    const { inArray } = await import("drizzle-orm");
+    return db.select().from(visits)
+      .where(inArray(visits.userId, employeeUserIds))
+      .orderBy(desc(visits.visitDate));
   }
 
   async getVisit(id: string): Promise<Visit | undefined> {

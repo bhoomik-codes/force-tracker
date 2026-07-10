@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { setupWebSocket } from "./websocket";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
@@ -24,6 +25,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+// Serve uploads statically
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ─── Session middleware ────────────────────────────────────────────────────────
 app.use(

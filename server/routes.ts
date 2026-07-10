@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 import {
   insertVisitSchema,
   insertTimesheetSchema,
@@ -225,8 +228,40 @@ export async function registerRoutes(
   });
 
   // ─── Visit Routes ───────────────────────────────────────────────────────────
+  app.get("/api/visits", async (req, res) => {
+    try {
+      const adminId = (req.session as any)?.userId;
+      const userRole = (req.session as any)?.userRole;
+      if (!adminId || userRole !== "admin") return res.status(401).json({ error: "Unauthorized" });
+
+      const visitList = await storage.getVisitsByAdmin(adminId);
+      res.json(visitList);
+    } catch (error: any) {
+      handleError(res, error);
+    }
+  });
+
   app.post("/api/visits", async (req, res) => {
     try {
+      // Handle base64 image uploads
+      if (req.body.photos && Array.isArray(req.body.photos)) {
+        const processedPhotos = req.body.photos.map((photo: string) => {
+          if (photo.startsWith("data:image")) {
+            const matches = photo.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+              const extension = matches[1].split('/')[1] || 'jpg';
+              const buffer = Buffer.from(matches[2], 'base64');
+              const filename = `${crypto.randomUUID()}.${extension}`;
+              const filepath = path.join(process.cwd(), "uploads", filename);
+              fs.writeFileSync(filepath, buffer);
+              return `/uploads/${filename}`;
+            }
+          }
+          return photo;
+        });
+        req.body.photos = processedPhotos;
+      }
+
       const data = insertVisitSchema.parse(req.body);
       const visit = await storage.createVisit(data);
       res.status(201).json(visit);
