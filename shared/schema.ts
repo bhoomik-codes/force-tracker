@@ -73,6 +73,22 @@ export const timesheets = pgTable("timesheets", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const settings = pgTable("settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  adminId: varchar("admin_id").notNull().unique(), // one settings row per admin organization
+  companyName: text("company_name").default("Acme Corp Logistics"),
+  contactPerson: text("contact_person").default("Admin User"),
+  emailAddress: text("email_address").default("admin@acmecorp.com"),
+  phoneNumber: text("phone_number").default("+91 98765 43210"),
+  address: text("address").default("123 Business Park, Sector 62, Noida, UP"),
+  emailAlerts: boolean("email_alerts").default(true),
+  geofenceBreaches: boolean("geofence_breaches").default(true),
+  lowBatteryWarning: boolean("low_battery_warning").default(false),
+  trackingInterval: varchar("tracking_interval", { length: 20 }).default("5"),
+  workingHoursStart: varchar("working_hours_start", { length: 10 }).default("09:00"),
+  workingHoursEnd: varchar("working_hours_end", { length: 10 }).default("18:00"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -82,6 +98,7 @@ export const insertEmployeeSchema = createInsertSchema(employees);
 export const insertVisitSchema = createInsertSchema(visits);
 export const insertTimesheetSchema = createInsertSchema(timesheets);
 export const insertTaskSchema = createInsertSchema(tasks).omit({ createdAt: true, updatedAt: true });
+export const insertSettingsSchema = createInsertSchema(settings).omit({ id: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -93,4 +110,6 @@ export type TimeSheet = typeof timesheets.$inferSelect;
 export type InsertTimeSheet = z.infer<typeof insertTimesheetSchema>;
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Settings = typeof settings.$inferSelect;
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 

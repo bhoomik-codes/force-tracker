@@ -46,12 +46,12 @@ export default function MobileTimeSheet() {
       ? "bg-green-100 text-green-700 hover:bg-green-100"
       : "bg-orange-100 text-orange-700 hover:bg-orange-100";
 
-  const formatTime = (iso: string | null) => {
+  const formatTime = (iso: string | Date | null) => {
     if (!iso) return "--:--";
     return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  const formatDate = (iso: string) =>
+  const formatDate = (iso: string | Date) =>
     new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (

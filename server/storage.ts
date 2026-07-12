@@ -7,6 +7,7 @@ import {
   type Visit, type InsertVisit,
   type TimeSheet, type InsertTimeSheet,
   type Task, type InsertTask,
+  type Settings, type InsertSettings,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -53,6 +54,10 @@ export interface IStorage {
     totalTasksCompleted: number;
     totalTasksPending: number;
   }>;
+
+  // Settings
+  getSettings(adminId: string): Promise<Settings | undefined>;
+  updateSettings(adminId: string, settings: Partial<Settings>): Promise<Settings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -236,6 +241,28 @@ export class DatabaseStorage implements IStorage {
       totalTasksCompleted: adminTasks.filter(t => t.status === "Completed").length,
       totalTasksPending: adminTasks.filter(t => t.status === "Pending").length,
     };
+  }
+
+  // ─── Settings ─────────────────────────────────────────────────────────────
+  async getSettings(adminId: string): Promise<Settings | undefined> {
+    const { settings } = await import("@shared/schema");
+    const [result] = await db.select().from(settings).where(eq(settings.adminId, adminId));
+    return result;
+  }
+
+  async updateSettings(adminId: string, update: Partial<Settings>): Promise<Settings> {
+    const { settings } = await import("@shared/schema");
+    
+    // Upsert logic for settings
+    const [existing] = await db.select().from(settings).where(eq(settings.adminId, adminId));
+    
+    if (existing) {
+      const [updated] = await db.update(settings).set(update).where(eq(settings.adminId, adminId)).returning();
+      return updated;
+    } else {
+      const [created] = await db.insert(settings).values({ adminId, ...update }).returning();
+      return created;
+    }
   }
 }
 

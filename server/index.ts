@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -15,6 +17,20 @@ declare module "http" {
   }
 }
 
+// ─── Security Hardening ───────────────────────────────────────────────────
+app.use(helmet());
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+// Apply rate limiter strictly to auth and core API routes to prevent brute force
+app.use("/api/login", apiLimiter);
+app.use("/api/register", apiLimiter);
+
+// ─── Body Parsers ─────────────────────────────────────────────────────────
 app.use(
   express.json({
     limit: "10mb", // allow base64 photo uploads
@@ -30,18 +46,22 @@ app.use(express.urlencoded({ extended: false }));
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ─── Session middleware ────────────────────────────────────────────────────────
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "force-tracker-secret-change-in-production",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    },
-  })
-);
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET environment variable is strictly required!");
+}
+
+const sessionParser = session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+});
+
+app.use(sessionParser);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -57,23 +77,12 @@ export function log(message: string, source = "express") {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+      // JSON response capturing removed to prevent information leakage!
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
   });
 
@@ -83,8 +92,8 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
   
-  // Attach WebSocket server
-  setupWebSocket(httpServer);
+  // Attach WebSocket server with secure session parsing
+  setupWebSocket(httpServer, sessionParser);
 
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);

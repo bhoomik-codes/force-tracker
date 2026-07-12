@@ -9,29 +9,54 @@ interface ConnectedClient {
   role?: string;
 }
 
-export function setupWebSocket(server: Server) {
-  const wss = new WebSocketServer({ server, path: "/ws" });
+export function setupWebSocket(server: Server, sessionParser: any) {
+  // Use noServer as we are hooking into the HTTP upgrade event manually
+  const wss = new WebSocketServer({ noServer: true, path: "/ws" });
   const clients = new Set<ConnectedClient>();
 
-  wss.on("connection", (ws, req) => {
-    log("New WebSocket connection established", "ws");
+  // Securely intercept upgrade requests
+  server.on("upgrade", (request: any, socket, head) => {
+    const pathname = new URL(request.url || "", `http://${request.headers.host}`).pathname;
     
-    const client: ConnectedClient = { ws };
+    if (pathname === "/ws") {
+      sessionParser(request, {} as any, () => {
+        const session = request.session;
+        // Block unauthenticated socket upgrades immediately
+        if (!session || !session.userId) {
+          socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+          socket.destroy();
+          return;
+        }
+
+        wss.handleUpgrade(request, socket, head, (ws) => {
+          wss.emit("connection", ws, request);
+        });
+      });
+    }
+  });
+
+  wss.on("connection", (ws, req: any) => {
+    // Authenticate using strictly the HTTP Session data, NOT a client payload
+    const session = req.session;
+    const client: ConnectedClient = { ws, userId: session.userId, role: session.userRole };
     clients.add(client);
+    
+    log(`Client authenticated via WS session: ${client.userId} (${client.role})`, "ws");
 
     ws.on("message", async (data) => {
       try {
         const message = JSON.parse(data.toString());
 
-        if (message.type === "AUTH") {
-          client.userId = message.userId;
-          client.role = message.role;
-          log(`Client authenticated via WS: ${client.userId} (${client.role})`, "ws");
-        } 
-        else if (message.type === "LOCATION_UPDATE") {
+        if (message.type === "LOCATION_UPDATE") {
           const { latitude, longitude, employeeId } = message.payload;
           
-          if (!employeeId) {
+          if (!employeeId || !latitude || !longitude) return;
+
+          // Strict IDOR Check: Ensure the sender is modifying their own location
+          const allEmployees = await storage.getEmployees();
+          const me = allEmployees.find(e => e.userId === client.userId);
+          if (!me || me.id !== employeeId) {
+            log(`Blocked unauthorized location update from user ${client.userId}`, "ws");
             return;
           }
 

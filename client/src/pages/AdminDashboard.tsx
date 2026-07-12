@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { MapWidget } from "@/components/widgets/MapWidget";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUpRight, Users, CheckCircle2, Clock, MapPin, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowUpRight, Users, CheckCircle2, Clock, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DashboardStats {
@@ -35,27 +36,27 @@ export default function AdminDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
         <StatsCard
           title="Total Workforce"
-          value={isLoading ? "—" : stats?.totalEmployees ?? 0}
+          value={isLoading ? <Skeleton className="h-8 w-16" /> : stats?.totalEmployees ?? 0}
           icon={Users}
           trend="Registered employees"
         />
         <StatsCard
           title="Active Today"
-          value={isLoading ? "—" : stats?.activeEmployees ?? 0}
+          value={isLoading ? <Skeleton className="h-8 w-16" /> : stats?.activeEmployees ?? 0}
           icon={CheckCircle2}
           trend={`${attendancePercent}% attendance`}
           trendPositive
         />
         <StatsCard
           title="Tasks Completed"
-          value={isLoading ? "—" : stats?.totalTasksCompleted ?? 0}
+          value={isLoading ? <Skeleton className="h-8 w-16" /> : stats?.totalTasksCompleted ?? 0}
           icon={Clock}
           trend={`${stats?.totalTasksPending ?? 0} pending`}
           trendPositive
         />
         <StatsCard
           title="Visits Done"
-          value={isLoading ? "—" : stats?.totalVisitsToday ?? 0}
+          value={isLoading ? <Skeleton className="h-8 w-16" /> : stats?.totalVisitsToday ?? 0}
           icon={MapPin}
           trend="Total site visits"
           trendPositive
@@ -96,8 +97,13 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="flex-1 p-6 space-y-4">
             {isLoading ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading...
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-8 w-12" />
+                  </div>
+                ))}
               </div>
             ) : (
               <>
@@ -124,7 +130,7 @@ export default function AdminDashboard() {
 }
 
 function StatsCard({ title, value, icon: Icon, trend, trendPositive = true }: {
-  title: string; value: string | number; icon: any; trend: string; trendPositive?: boolean;
+  title: string; value: React.ReactNode; icon: any; trend: string; trendPositive?: boolean;
 }) {
   return (
     <Card className="border-0 shadow-sm ring-1 ring-border bg-white">
@@ -137,7 +143,7 @@ function StatsCard({ title, value, icon: Icon, trend, trendPositive = true }: {
           <div className="text-2xl font-bold font-heading">{value}</div>
           <div className={cn("text-xs flex items-center font-medium", trendPositive ? "text-green-600" : "text-red-600")}>
             {trend}
-            {trendPositive ? <ArrowUpRight className="ml-1 h-3 w-3" /> : null}
+            {trendPositive && typeof value !== "object" ? <ArrowUpRight className="ml-1 h-3 w-3" /> : null}
           </div>
         </div>
       </CardContent>

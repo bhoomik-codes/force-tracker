@@ -25,12 +25,12 @@ export default function AdminVisits() {
           ) : (
             visits.map((visit) => {
               const employee = employees.find(e => e.userId === visit.userId);
-              const hasPhotos = visit.photos && (visit.photos as string[]).length > 0;
+              const hasPhotos = Boolean(visit.photos && Array.isArray(visit.photos) && visit.photos.length > 0);
               const photoUrl = hasPhotos ? (visit.photos as string[])[0] : null;
 
               return (
                 <Card key={visit.id as string} className="overflow-hidden">
-                  {hasPhotos && photoUrl && (
+                  {hasPhotos && photoUrl ? (
                     <Dialog>
                       <DialogTrigger asChild>
                         <div className="aspect-video w-full cursor-pointer relative group">
@@ -48,7 +48,7 @@ export default function AdminVisits() {
                         <img src={photoUrl} alt="Full view" className="w-full h-auto max-h-[90vh] object-contain" />
                       </DialogContent>
                     </Dialog>
-                  )}
+                  ) : null}
                   <CardHeader className="pb-3">
                     <CardTitle className="text-lg flex justify-between items-start">
                       <span>{visit.clientName as string}</span>

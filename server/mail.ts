@@ -1,21 +1,39 @@
 import nodemailer from "nodemailer";
 
-// Using Ethereal Email for development/testing
 let transporter: nodemailer.Transporter | null = null;
 
 async function getTransporter() {
   if (transporter) return transporter;
 
-  // Generate test SMTP service account from ethereal.email
+  // Use Production SMTP credentials if provided
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_SECURE === "true", 
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    return transporter;
+  }
+
+  // Fallback to Ethereal ONLY in non-production or if strict variables are missing during dev
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("SMTP credentials (SMTP_HOST, SMTP_USER, SMTP_PASS) are required in production!");
+  }
+
+  console.warn("⚠️ No SMTP credentials found. Falling back to Ethereal Email for development testing.");
   const testAccount = await nodemailer.createTestAccount();
 
   transporter = nodemailer.createTransport({
     host: "smtp.ethereal.email",
     port: 587,
-    secure: false, // true for 465, false for other ports
+    secure: false,
     auth: {
-      user: testAccount.user, // generated ethereal user
-      pass: testAccount.pass, // generated ethereal password
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
   });
 
@@ -45,7 +63,9 @@ export async function sendEmployeeCredentials(email: string, name: string, usern
     });
 
     console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    if (info.messageId && info.messageId.includes("ethereal")) {
+        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+    }
   } catch (err) {
     console.error("Failed to send email:", err);
   }

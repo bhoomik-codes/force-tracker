@@ -25,13 +25,7 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Mock coordinates for demo
-const LOCATIONS = {
-  noida: [28.6139, 77.3590],
-  delhi: [28.6304, 77.2177],
-  bangalore: [12.9784, 77.6408],
-  mumbai: [19.1136, 72.8697],
-};
+// Removed mock coordinates
 
 function MapController({ center }: { center: [number, number] }) {
   const map = useMap();
@@ -59,7 +53,7 @@ export default function LiveMap() {
     }
   }, [lastMessage]);
 
-  // Transform data to include coordinates
+  // Transform data to include only real coordinates
   const agentsWithLocation = employees.map(emp => {
     // 1. Check for live WebSocket updates
     if (liveLocations[emp.id]) {
@@ -67,28 +61,32 @@ export default function LiveMap() {
         ...emp,
         lat: liveLocations[emp.id].lat,
         lng: liveLocations[emp.id].lng,
-        battery: 100,
-        lastPing: "Live"
+        lastPing: "Live",
+        hasLocation: true,
       };
     }
 
-    // 2. Fallback to Database coordinates
-    let coords = LOCATIONS.delhi; // Default fallback
-    if ((emp.location || "").includes("Noida")) coords = LOCATIONS.noida;
-    if ((emp.location || "").includes("Bangalore")) coords = LOCATIONS.bangalore;
-    
+    // 2. Use Database coordinates if available (NO MOCK FALLBACKS)
     if (emp.latitude && emp.longitude) {
-      coords = [parseFloat(emp.latitude), parseFloat(emp.longitude)];
+      return {
+        ...emp,
+        lat: parseFloat(emp.latitude),
+        lng: parseFloat(emp.longitude),
+        lastPing: emp.updatedAt ? new Date(emp.updatedAt).toLocaleTimeString() : "Unknown",
+        hasLocation: true,
+      };
     }
     
     return {
       ...emp,
-      lat: coords[0],
-      lng: coords[1],
-      battery: 100, // mock battery
-      lastPing: emp.updatedAt ? new Date(emp.updatedAt).toLocaleTimeString() : "Unknown" 
+      lat: 0,
+      lng: 0,
+      lastPing: emp.updatedAt ? new Date(emp.updatedAt).toLocaleTimeString() : "Unknown",
+      hasLocation: false,
     };
   });
+
+  const activeAgentsWithLocation = agentsWithLocation.filter(a => a.hasLocation);
 
   const handleAgentSelect = (value: string) => {
     setSelectedAgent(value);
@@ -161,13 +159,10 @@ export default function LiveMap() {
                         <MapPin className="h-3 w-3" /> {(agent.location || "").split(',')[0]}
                       </div>
                       <div className="flex items-center gap-1">
-                        <Battery className="h-3 w-3" /> {agent.battery}%
-                      </div>
-                      <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {agent.lastPing}
                       </div>
                       <div className="flex items-center gap-1">
-                        <Signal className="h-3 w-3" /> GPS: Strong
+                        <Signal className="h-3 w-3" /> {agent.hasLocation ? "GPS Active" : "No GPS"}
                       </div>
                     </div>
                   </div>
@@ -190,7 +185,7 @@ export default function LiveMap() {
                 />
                 <MapController center={mapCenter} />
                 
-                {agentsWithLocation.map((agent) => (
+                {activeAgentsWithLocation.map((agent) => (
                   (selectedAgent === "all" || selectedAgent === agent.id.toString()) && (
                     <Marker 
                       key={agent.id} 

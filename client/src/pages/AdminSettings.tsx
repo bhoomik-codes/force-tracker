@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,23 +9,72 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, Lock, User, Globe, Smartphone, Mail, Shield } from "lucide-react";
+import { Bell, Lock, User, Globe, Smartphone, Mail, Shield, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Settings } from "@shared/schema";
 
 export default function AdminSettings() {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const qc = useQueryClient();
 
-  const handleSave = () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+  const { data: settings, isLoading: isFetching } = useQuery<Settings>({
+    queryKey: ["/api/settings"],
+  });
+
+  const [formData, setFormData] = useState<Partial<Settings>>({});
+
+  // Sync state when data loads
+  useEffect(() => {
+    if (settings) {
+      setFormData(settings);
+    }
+  }, [settings]);
+
+  const updateSettings = useMutation({
+    mutationFn: async (data: Partial<Settings>) => {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update settings");
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/settings"] });
       toast({
         title: "Settings Saved",
         description: "Your changes have been successfully applied.",
       });
-    }, 1000);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save settings.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleChange = (key: keyof Settings, value: any) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
   };
+
+  const handleSave = () => {
+    updateSettings.mutate(formData);
+  };
+
+  if (isFetching) {
+    return (
+      <AdminLayout>
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  const isLoading = updateSettings.isPending;
 
   return (
     <AdminLayout>
@@ -52,12 +101,6 @@ export default function AdminSettings() {
                   <Bell className="mr-2 h-4 w-4" /> Notifications
                 </TabsTrigger>
                 <TabsTrigger 
-                  value="security" 
-                  className="justify-start px-3 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
-                >
-                  <Shield className="mr-2 h-4 w-4" /> Security
-                </TabsTrigger>
-                <TabsTrigger 
                   value="app" 
                   className="justify-start px-3 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
                 >
@@ -78,29 +121,44 @@ export default function AdminSettings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Company Name</Label>
-                        <Input defaultValue="Acme Corp Logistics" />
+                        <Input 
+                          value={formData.companyName || ""} 
+                          onChange={(e) => handleChange("companyName", e.target.value)} 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Contact Person</Label>
-                        <Input defaultValue="Admin User" />
+                        <Input 
+                          value={formData.contactPerson || ""} 
+                          onChange={(e) => handleChange("contactPerson", e.target.value)} 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Email Address</Label>
-                        <Input defaultValue="admin@acmecorp.com" />
+                        <Input 
+                          value={formData.emailAddress || ""} 
+                          onChange={(e) => handleChange("emailAddress", e.target.value)} 
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Phone Number</Label>
-                        <Input defaultValue="+91 98765 43210" />
+                        <Input 
+                          value={formData.phoneNumber || ""} 
+                          onChange={(e) => handleChange("phoneNumber", e.target.value)} 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label>Address</Label>
-                      <Input defaultValue="123 Business Park, Sector 62, Noida, UP" />
+                      <Input 
+                        value={formData.address || ""} 
+                        onChange={(e) => handleChange("address", e.target.value)} 
+                      />
                     </div>
                   </CardContent>
                   <CardFooter className="border-t px-6 py-4">
                     <Button onClick={handleSave} disabled={isLoading}>
-                      {isLoading ? "Saving..." : "Save Changes"}
+                      {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Changes"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -119,7 +177,10 @@ export default function AdminSettings() {
                         <Label className="text-base">Email Alerts</Label>
                         <span className="text-sm text-muted-foreground">Receive daily summaries via email.</span>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch 
+                        checked={formData.emailAlerts ?? true} 
+                        onCheckedChange={(checked) => handleChange("emailAlerts", checked)} 
+                      />
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between space-x-2">
@@ -127,7 +188,10 @@ export default function AdminSettings() {
                         <Label className="text-base">Geofence Breaches</Label>
                         <span className="text-sm text-muted-foreground">Instant alert when agent leaves assigned area.</span>
                       </div>
-                      <Switch defaultChecked />
+                      <Switch 
+                        checked={formData.geofenceBreaches ?? true} 
+                        onCheckedChange={(checked) => handleChange("geofenceBreaches", checked)} 
+                      />
                     </div>
                     <Separator />
                     <div className="flex items-center justify-between space-x-2">
@@ -135,42 +199,16 @@ export default function AdminSettings() {
                         <Label className="text-base">Low Battery Warning</Label>
                         <span className="text-sm text-muted-foreground">Notify when agent device is below 15%.</span>
                       </div>
-                      <Switch />
+                      <Switch 
+                        checked={formData.lowBatteryWarning ?? false} 
+                        onCheckedChange={(checked) => handleChange("lowBatteryWarning", checked)} 
+                      />
                     </div>
                   </CardContent>
                   <CardFooter className="border-t px-6 py-4">
                      <Button onClick={handleSave} disabled={isLoading}>
-                      {isLoading ? "Saving..." : "Save Preferences"}
+                      {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Preferences"}
                     </Button>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-
-              {/* Security Settings */}
-              <TabsContent value="security" className="m-0 space-y-6">
-                 <Card>
-                  <CardHeader>
-                    <CardTitle>Password & Security</CardTitle>
-                    <CardDescription>Manage your account security.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Current Password</Label>
-                      <Input type="password" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>New Password</Label>
-                        <Input type="password" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Confirm Password</Label>
-                        <Input type="password" />
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t px-6 py-4">
-                    <Button onClick={handleSave} disabled={isLoading}>Update Password</Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
@@ -185,7 +223,10 @@ export default function AdminSettings() {
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                        <Label>GPS Tracking Interval</Label>
-                       <Select defaultValue="5">
+                       <Select 
+                         value={formData.trackingInterval || "5"} 
+                         onValueChange={(val) => handleChange("trackingInterval", val)}
+                       >
                          <SelectTrigger>
                            <SelectValue placeholder="Select interval" />
                          </SelectTrigger>
@@ -200,14 +241,26 @@ export default function AdminSettings() {
                     <div className="space-y-2">
                        <Label>Working Hours</Label>
                        <div className="flex items-center gap-2">
-                         <Input type="time" defaultValue="09:00" className="w-[150px]" />
+                         <Input 
+                           type="time" 
+                           value={formData.workingHoursStart || "09:00"} 
+                           onChange={(e) => handleChange("workingHoursStart", e.target.value)} 
+                           className="w-[150px]" 
+                         />
                          <span>to</span>
-                         <Input type="time" defaultValue="18:00" className="w-[150px]" />
+                         <Input 
+                           type="time" 
+                           value={formData.workingHoursEnd || "18:00"} 
+                           onChange={(e) => handleChange("workingHoursEnd", e.target.value)} 
+                           className="w-[150px]" 
+                         />
                        </div>
                     </div>
                   </CardContent>
                   <CardFooter className="border-t px-6 py-4">
-                    <Button onClick={handleSave} disabled={isLoading}>Save Configuration</Button>
+                    <Button onClick={handleSave} disabled={isLoading}>
+                      {isLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...</> : "Save Configuration"}
+                    </Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
